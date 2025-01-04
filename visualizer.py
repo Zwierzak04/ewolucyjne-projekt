@@ -2,6 +2,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from shapely import LineString
 import itertools
+import math
 
 def set_invalid(graph, edge_start, edge_end):
     '''
@@ -29,9 +30,10 @@ def visualize(vertices, edges, positions=None):
         positions = nx.spring_layout(G)
 
     edge_pos = [LineString((positions[e[0]], positions[e[1]])) for e in edges]
-
+    inte = [[],[]]
+    intersection_count = 0.0
+    
     # FIXME: coś w tych przecięciach się chyba jeszcze jebie
-    intersectins = 0
     for i1, i2 in itertools.combinations(range(len(edges)), 2):
         intersection = edge_pos[i1].intersection(edge_pos[i2])
 
@@ -43,7 +45,7 @@ def visualize(vertices, edges, positions=None):
         if(intersection.geom_type != 'Point'):
             set_invalid(G, *edges[i1])
             set_invalid(G, *edges[i2])
-            intersectins = -1 # tak oznaczam nieskończoność przecięć
+            intersection_count = math.inf
             continue
 
         # pomijamy krawędzie, które mają wspólne wierzchołki
@@ -52,13 +54,15 @@ def visualize(vertices, edges, positions=None):
             continue
 
         if not intersection.is_empty:
-            intersectins += 1
+            intersection_count += 1
+            inte[0].append(intersection.x)
+            inte[1].append(intersection.y)
             print(edges[i1], edges[i2], intersection)
-            plt.scatter(*intersection.xy, color='red')
     
     edge_colors = [G[u][v].get('color', 'black') for u,v in edges]
     edge_weights = [G[u][v].get('weight', 1) for u,v in edges]
 
-    nx.draw(G, pos=positions, node_size=100, font_size=20, edge_color=edge_colors, width=edge_weights, labels={e: e+1 for e in vertices}) # 
-    plt.legend(['Liczba przecięć:  ' + (str(intersectins) if intersectins != -1 else '∞')])
+    nx.draw(G, pos=positions, node_size=100, font_size=20, edge_color=edge_colors, width=edge_weights, labels={e: e+1 for e in vertices})
+    plt.scatter(inte[0], inte[1], color='red', zorder=20)
+    plt.legend([f'Liczba przecięć:  {intersection_count}'])
     plt.show()
