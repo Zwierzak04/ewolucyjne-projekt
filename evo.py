@@ -9,23 +9,22 @@ def liczba_przeciec(edges, positions):
     reshaped = np.reshape(positions, (-1, 2))
     edge_pos = [LineString(reshaped[e]) for e in edges]
     intersectins = 0.0
+    seen_vertices = {}
+
     for i1, i2 in itertools.combinations(range(len(edges)), 2):
-        intersection = edge_pos[i1].intersection(edge_pos[i2])
-
-        # brak przecięcia
-        if intersection.is_empty:
-            continue
-
-        # linie na siebie nachodzą - nieskończoność przecięć
-        if(intersection.geom_type != 'Point'):
-            return math.inf
-
-        # pomijamy krawędzie, które mają wspólne wierzchołki
-        # jeśli na siebie nie nachodzą to nie ma sensu ich sprawdzać
+        # Sprawdzanie, czy krawędzie mają wspólny wierzchołek
         if set(edges[i1]) & set(edges[i2]):
             continue
+        
+        # Sprawdzanie, czy krawędzie się przecinają
+        if edge_pos[i1].intersects(edge_pos[i2]):
+            intersection = edge_pos[i1].intersection(edge_pos[i2])
 
-        intersectins += 1
+            # linie na siebie nachodzą - nieskończoność przecięć
+            if intersection.geom_type != 'Point':
+                return math.inf
+
+            intersectins += 1
 
     return (intersectins,)
 
