@@ -1,7 +1,8 @@
 
 from loader import load_file
 from visualizer import visualize
-from evo import liczba_przeciec, search_best
+from evo import liczba_przeciec, search_fancy_mutation as search_best
+#from evo2 import liczba_przeciec, search_best
 import numpy as np
 import sys
 
@@ -12,7 +13,7 @@ def main():
     Punkt wejscia. wczytuje graf, tworzy graf NetworkX, znajduje najlepsze rozwiazanie i wizualizuje je.
     '''
 
-    graph_file = sys.argv[1] if len(sys.argv) > 1 else 'examples/z_dokumentu.txt'
+    graph_file = sys.argv[1] if len(sys.argv) > 1 else 'examples/dececahedron.txt'
     vertices, edges = load_file(graph_file)
     #print(vertices, edges)
 

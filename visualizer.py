@@ -57,7 +57,7 @@ def visualize(vertices, edges, positions=None):
             intersection_count += 1
             inte[0].append(intersection.x)
             inte[1].append(intersection.y)
-            print(edges[i1], edges[i2], intersection)
+            #print(edges[i1], edges[i2], intersection)
     
     edge_colors = [G[u][v].get('color', 'black') for u,v in edges]
     edge_weights = [G[u][v].get('weight', 1) for u,v in edges]
