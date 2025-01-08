@@ -180,7 +180,8 @@ def swap_intersections_mutation(individual, edges, verts): # , indpb
 
         # linie na siebie nachodzą - nieskończoność przecięć
         if(intersection.geom_type != 'Point'):
-            visualize(verts, edges, individual)
+            # print('why???')
+            # visualize(verts, edges, np.reshape(individual,(-1,2)))
             continue
 
         # pomijamy krawędzie, które mają wspólne wierzchołki
@@ -191,23 +192,35 @@ def swap_intersections_mutation(individual, edges, verts): # , indpb
         # tam gdzie są przecięcia to próbujemy je odplątać
         prev = np.copy(individual)
         #if np.random.random_sample() < indpb:
-        which_one = np.random.randint(0,2) # początek czy koniec krawędzi podmieniamy
-        vert1 = 2*edges[i1][which_one]
-        vert2 = 2*edges[i2][which_one]
+        #which_one =  # początek czy koniec krawędzi podmieniamy
+        vert1 = 2*edges[i1][np.random.randint(0,2)]
+        vert2 = 2*edges[i2][np.random.randint(0,2)]
         individual[vert1], individual[vert2] = individual[vert2], individual[vert1]
         individual[vert1+1], individual[vert2+1] = individual[vert2+1], individual[vert1+1]
 
-        if(liczba_przeciec(edges, individual)-2137 < 1):
-            visualize(verts, edges, prev)
-            visualize(verts, edges, individual)
+        move_const = 0.2
+
+        individual[vert1] += np.random.randn() * move_const
+        individual[vert1+1] += np.random.randn() * move_const
+        individual[vert2+1] += np.random.randn() * move_const
+        individual[vert2+1] += np.random.randn() * move_const
+
+        # if(abs(liczba_przeciec(edges, individual)-2137) < 1):
+        #     print(vert1/2 + 1, vert2/2 + 1)
+        #     print('first')
+        #     visualize(verts, edges, np.reshape(prev,(-1,2)))
+        #     print('second')
+        #     visualize(verts, edges, np.reshape(individual, (-1,2)))
 
         break
 
     return individual,
 
 def mieszane(individual, edges, verts):
+    #ind = individual
     ind, = swap_intersections_mutation(individual, edges=edges, verts=verts)
-    return tools.mutGaussian(ind, indpb=0.2, mu=0.0, sigma=0.33)
+    return ind,
+    #return tools.mutGaussian(ind, indpb=0.2, mu=0.0, sigma=0.5)
 
 def search_fancy_mutation(n_verts, edges, start=None):
 
@@ -252,7 +265,7 @@ def search_fancy_mutation(n_verts, edges, start=None):
 
     # uruchomienie algorytmu
     pop = toolbox.population(n=100)
-    _, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.9, mutpb=0.1, ngen=200, stats=stats, halloffame=hof, verbose=True)
+    _, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.9, mutpb=0.1, ngen=100, stats=stats, halloffame=hof, verbose=True)
     #_, logbook = algorithms.eaMuCommaLambda(pop, toolbox, mu=100, lambda_=200, mutpb=0.1,cxpb=0.9, ngen=100, verbose=True, stats=stats, halloffame=hof)
 
     return hof[0]
