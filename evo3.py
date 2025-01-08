@@ -19,7 +19,7 @@ def liczba_przeciec(edges, positions):
 
         # linie na siebie nachodzą - nieskończoność przecięć
         if(intersection.geom_type != 'Point'):
-            return 2137
+            return 2137**3
 
         # pomijamy krawędzie, które mają wspólne wierzchołki
         # jeśli na siebie nie nachodzą to nie ma sensu ich sprawdzać
@@ -49,7 +49,7 @@ def cx_point_uniform(ind1, ind2, indpb):
     return ind1, ind2
 
 
-def search_step(n_verts, fitness, iters=100, starting_point=None):
+def search_step(n_verts, fitness, iters=100, starting_point=None, min_fitness=0.0):
     '''
     # WSZYSTKIE ZAMIANY W ALGORYTMIE ZAPISUJCIE
 
@@ -99,9 +99,9 @@ def search_step(n_verts, fitness, iters=100, starting_point=None):
 
     # uruchomienie algorytmu
     pop = toolbox.population(n=100)
-    _, logbook = eaSimpleEarly(pop, toolbox, cxpb=0.9, mutpb=0.1, ngen=iters, stats=stats, halloffame=hof, verbose=True)
+    _, logbook = eaSimpleEarly(pop, toolbox, cxpb=0.9, mutpb=0.1, ngen=iters, stats=stats, halloffame=hof, verbose=True, min_fitness=min_fitness)
 
-    return hof[0]
+    return hof[0], hof[0].fitness.values[0]
 
 def eaSimpleEarly(population, toolbox, cxpb, mutpb, ngen, stats=None,
              halloffame=None, verbose=__debug__, min_fitness = 0.0):
@@ -149,39 +149,18 @@ def eaSimpleEarly(population, toolbox, cxpb, mutpb, ngen, stats=None,
         if verbose:
             print(logbook.stream)
 
-        if record['min'] <= min_fitness:
+        if record['min'] <= (min_fitness+0.5):
             print('early stopping')
             break
 
     return population, logbook
 
-def search_best(n_verts, edges, step_size, total_iters):
-    #creator.warnings.filterwarnings("ignore")
+def search_best(n_verts, edges, step_size, iters_per_chunk):
+    verts = np.zeros(n_verts*2)
+    total_size = 0
 
-    # zmieniamy pary na rzeczywistą listę sąsiedztwa w końcu
-    # edges_dict = {}
-    # for e in edges:
-    #     if e[0] not in edges_dict:
-    #         edges_dict[e[0]] = []
-    #     edges_dict[e[0]].append(e[1])
-
-    # potencjalna optymalizacja - kolejność breadth-first przeglądania wierzchołków
-    # starting_vert = np.random.randint(0, n_verts)
-    # order = [starting_vert]
-    # stack = [starting_vert]
-    # for i in range(n_verts-1):
-    #     order.append(edges_dict[order[-1]])
-
-    #verts = np.random.rand(n_verts*2)
-    verts = []
-
-    tot_chunks = n_verts // step_size
-    if n_verts % step_size != 0:
-        tot_chunks += 1
-
-    iter_per_chunk = total_iters // ((tot_chunks + 1)*tot_chunks/2)
-
-    for it, current_verts in enumerate(itertools.batched(range(0, n_verts), step_size)):
+    last_fit = 0.0
+    for current_verts in itertools.batched(range(0, n_verts), step_size):
 
         relevant_verts = range(current_verts[-1]+1)
         relevant_edges = list(filter(lambda e: e[0] in relevant_verts and e[1] in relevant_verts, edges))
@@ -189,38 +168,35 @@ def search_best(n_verts, edges, step_size, total_iters):
         print(f'{relevant_verts=} {relevant_edges=}')
 
         def fitness(x):
-            return liczba_przeciec2(relevant_edges, list(itertools.chain(verts, x)))
+            verts[total_size:(total_size+len(x))] = x
+            return liczba_przeciec2(relevant_edges, verts)
         
-        best = search_step(len(current_verts), fitness, total_iters//tot_chunks)
-        verts.extend(best)
+        best, fit = search_step(len(current_verts), fitness, iters_per_chunk, min_fitness=last_fit)
+        last_fit = fit
+        verts[total_size:total_size+len(best)] = best
+        total_size += len(best)
 
     return verts
 
-def gen_initial(orig, n_new):
-    yield from orig #tools.mutGaussian(orig, mu=0, sigma=0.4, indpb=0.75)[0]
-    for _ in range(n_new):
-        yield np.random.rand(n_new*2)
+def gen_initial(verts, start, stop):
+    v = np.copy(verts)
+    v[:start] += np.random.randn() * 0.15
+    v[start:stop] = np.random.random_sample()
+    return v
 
-def search_best_unfrozen(n_verts, edges, step_size, total_iters):
-    verts = []
+def search_best_unfrozen(n_verts, edges, step_size, iters_per_chunk):
+    verts = np.zeros(n_verts*2)
 
-    tot_chunks = n_verts // step_size
-    if n_verts % step_size != 0:
-        tot_chunks += 1
-
-    iter_per_chunk = total_iters // ((tot_chunks + 1)*tot_chunks/2)
-
-    for it, current_verts in enumerate(itertools.batched(range(0, n_verts), step_size)):
+    total_size = 0
+    for current_verts in itertools.batched(range(0, n_verts), step_size):
+        slice_size = len(current_verts)*2
         relevant_verts = range(current_verts[-1]+1)
         relevant_edges = list(filter(lambda e: e[0] in relevant_verts and e[1] in relevant_verts, edges))
 
         print(f'{relevant_verts=} {relevant_edges=}')
-
-        def fitness(x):
-            return liczba_przeciec2(relevant_edges, x)
         
-        best = search_step(len(current_verts), fitness, total_iters//tot_chunks, starting_point=lambda: gen_initial(verts, len(current_verts)))
-        verts = best
-        visualize(relevant_verts, relevant_edges, np.reshape(verts, (-1, 2)))
+        best, fit = search_step(len(current_verts), lambda x: liczba_przeciec2(relevant_edges, x), iters_per_chunk, starting_point=lambda: gen_initial(verts, total_size, total_size+slice_size), min_fitness=0.0)
+        verts[:] = best
+        total_size += slice_size
 
     return verts

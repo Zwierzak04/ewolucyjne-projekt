@@ -29,7 +29,8 @@ def main():
     positions = nx.spring_layout(G) 
 
     n_verts = len(vertices)
-    szukane = search_best(n_verts, edges, 4, 200)#search_best(n_verts, edges)#, start=np.reshape([positions[i] for i in range(n_verts)], (1, n_verts))) # , start=[positions[i] for i in range(n_verts)] - na razie chyba to nie działa
+    szukane = search_best(n_verts, edges, 4, 50)
+    #search_best(n_verts, edges)#, start=np.reshape([positions[i] for i in range(n_verts)], (1, n_verts))) # , start=[positions[i] for i in range(n_verts)] - na razie chyba to nie działa
     visualize(vertices, edges, positions=np.reshape(szukane, (-1, 2)))
 
 if __name__ == '__main__':
