@@ -2,8 +2,7 @@ from deap import base, creator, tools, algorithms
 from shapely import LineString
 import numpy as np
 import itertools
-import math
-from visualizer import visualize
+from stats import all_statistics
 
 def liczba_przeciec(edges, positions):
     reshaped = np.reshape(positions, (-1, 2))
@@ -49,7 +48,7 @@ def cx_point_uniform(ind1, ind2, indpb):
     return ind1, ind2
 
 
-def search_step(n_verts, fitness, iters=100, starting_point=None, min_fitness=0.0):
+def search_step(n_verts, fitness, iters=100, starting_point=None, min_fitness=0.0, stfu=False):
     '''
     # WSZYSTKIE ZAMIANY W ALGORYTMIE ZAPISUJCIE
 
@@ -99,7 +98,7 @@ def search_step(n_verts, fitness, iters=100, starting_point=None, min_fitness=0.
 
     # uruchomienie algorytmu
     pop = toolbox.population(n=100)
-    _, logbook = eaSimpleEarly(pop, toolbox, cxpb=0.9, mutpb=0.1, ngen=iters, stats=stats, halloffame=hof, verbose=True, min_fitness=min_fitness)
+    _, logbook = eaSimpleEarly(pop, toolbox, cxpb=0.9, mutpb=0.1, ngen=iters, stats=stats, halloffame=hof, verbose=not stfu, min_fitness=min_fitness)
 
     return hof[0], hof[0].fitness.values[0]
 
@@ -150,12 +149,12 @@ def eaSimpleEarly(population, toolbox, cxpb, mutpb, ngen, stats=None,
             print(logbook.stream)
 
         if record['min'] <= (min_fitness+0.5):
-            print('early stopping')
+            #print('early stopping')
             break
 
     return population, logbook
 
-def search_best(n_verts, edges, step_size, iters_per_chunk):
+def search_best(n_verts, edges, step_size, iters_per_chunk, stfu=False):
     verts = np.zeros(n_verts*2)
     total_size = 0
 
@@ -165,18 +164,18 @@ def search_best(n_verts, edges, step_size, iters_per_chunk):
         relevant_verts = range(current_verts[-1]+1)
         relevant_edges = list(filter(lambda e: e[0] in relevant_verts and e[1] in relevant_verts, edges))
 
-        print(f'{relevant_verts=} {relevant_edges=}')
+        #print(f'{relevant_verts=} {relevant_edges=}')
 
         def fitness(x):
             verts[total_size:(total_size+len(x))] = x
             return liczba_przeciec2(relevant_edges, verts)
         
-        best, fit = search_step(len(current_verts), fitness, iters_per_chunk, min_fitness=last_fit)
+        best, fit = search_step(len(current_verts), fitness, iters_per_chunk, min_fitness=last_fit, stfu=stfu)
         last_fit = fit
         verts[total_size:total_size+len(best)] = best
         total_size += len(best)
 
-    return verts
+    return verts, last_fit
 
 def gen_initial(verts, start, stop):
     v = np.copy(verts)
@@ -184,19 +183,26 @@ def gen_initial(verts, start, stop):
     v[start:stop] = np.random.random_sample()
     return v
 
-def search_best_unfrozen(n_verts, edges, step_size, iters_per_chunk):
+def search_best_unfrozen(n_verts, edges, step_size, iters_per_chunk, stfu=False):
     verts = np.zeros(n_verts*2)
 
     total_size = 0
+    last_fit = 0.0
     for current_verts in itertools.batched(range(0, n_verts), step_size):
         slice_size = len(current_verts)*2
         relevant_verts = range(current_verts[-1]+1)
         relevant_edges = list(filter(lambda e: e[0] in relevant_verts and e[1] in relevant_verts, edges))
 
-        print(f'{relevant_verts=} {relevant_edges=}')
+        #print(f'{relevant_verts=} {relevant_edges=}')
         
-        best, fit = search_step(len(current_verts), lambda x: liczba_przeciec2(relevant_edges, x), iters_per_chunk, starting_point=lambda: gen_initial(verts, total_size, total_size+slice_size), min_fitness=0.0)
+        best, fit = search_step(len(current_verts), lambda x: liczba_przeciec2(relevant_edges, x), iters_per_chunk,
+                                 starting_point=lambda: gen_initial(verts, total_size, total_size+slice_size), min_fitness=0.0, stfu=stfu)
+        last_fit = fit
         verts[:] = best
         total_size += slice_size
 
-    return verts
+    return verts, last_fit
+
+if __name__ == '__main__':
+    all_statistics('wspolrzedne_iteracyjne', lambda vertices, edges, stfu: search_best(len(vertices), edges, 4, 75, stfu))
+    all_statistics('wspolrzedne_iteracyjne_cale', lambda vertices, edges, stfu: search_best_unfrozen(len(vertices), edges, 4, 75, stfu))

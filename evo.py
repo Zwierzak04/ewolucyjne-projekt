@@ -4,6 +4,7 @@ import numpy as np
 import itertools
 import math
 from visualizer import visualize
+from stats import all_statistics
 
 # FIXME: czasami z jakiegoś powodu nie działa
 def liczba_przeciec(edges, positions):
@@ -52,7 +53,7 @@ def cx_point_uniform(ind1, ind2, indpb):
     return ind1, ind2
 
 
-def search_best(n_verts, edges, start=None):
+def search_best(n_verts, edges, start=None, stfu=False):
     '''
     # WSZYSTKIE ZAMIANY W ALGORYTMIE ZAPISUJCIE
 
@@ -104,12 +105,12 @@ def search_best(n_verts, edges, start=None):
 
     # uruchomienie algorytmu
     pop = toolbox.population(n=100)
-    _, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.9, mutpb=0.1, ngen=100, stats=stats, halloffame=hof, verbose=True)
+    _, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.9, mutpb=0.1, ngen=100, stats=stats if not stfu else None, halloffame=hof, verbose=not stfu)
     #_, logbook = algorithms.eaMuCommaLambda(pop, toolbox, mu=100, lambda_=200, mutpb=0.1,cxpb=0.9, ngen=100, verbose=True, stats=stats, halloffame=hof)
 
-    return hof[0]
+    return hof[0], hof[0].fitness.values[0]
 
-def search_best_inv(n_verts, edges, start=None):
+def search_best_inv(n_verts, edges, start=None, stfu=False):
     '''
     # WSZYSTKIE ZAMIANY W ALGORYTMIE ZAPISUJCIE
 
@@ -162,10 +163,10 @@ def search_best_inv(n_verts, edges, start=None):
 
     # uruchomienie algorytmu
     pop = toolbox.population(n=100)
-    _, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.9, mutpb=0.1, ngen=100, stats=stats, halloffame=hof, verbose=True)
+    _, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.9, mutpb=0.1, ngen=100, stats=stats if not stfu else None, halloffame=hof, verbose=not stfu)
     #_, logbook = algorithms.eaMuCommaLambda(pop, toolbox, mu=100, lambda_=200, mutpb=0.1,cxpb=0.9, ngen=100, verbose=True, stats=stats, halloffame=hof)
 
-    return hof[0]
+    return hof[0], hof[0].fitness.values[0]
 
 def swap_intersections_mutation(individual, edges, verts): # , indpb
     #print('what')
@@ -222,7 +223,7 @@ def mieszane(individual, edges, verts):
     return ind,
     #return tools.mutGaussian(ind, indpb=0.2, mu=0.0, sigma=0.5)
 
-def search_fancy_mutation(n_verts, edges, start=None):
+def search_fancy_mutation(n_verts, edges, start=None, stfu=False):
 
     bruh = list(range(n_verts))
 
@@ -265,7 +266,12 @@ def search_fancy_mutation(n_verts, edges, start=None):
 
     # uruchomienie algorytmu
     pop = toolbox.population(n=100)
-    _, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.9, mutpb=0.1, ngen=100, stats=stats, halloffame=hof, verbose=True)
+    _, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.9, mutpb=0.1, ngen=100, stats=stats if stfu else None, halloffame=hof, verbose=not stfu)
     #_, logbook = algorithms.eaMuCommaLambda(pop, toolbox, mu=100, lambda_=200, mutpb=0.1,cxpb=0.9, ngen=100, verbose=True, stats=stats, halloffame=hof)
 
-    return hof[0]
+    return hof[0], hof[0].fitness.values[0]
+
+if __name__ == '__main__':
+    all_statistics('wspolrzedne_1', lambda vertices, edges, stfu: search_best(len(vertices), edges, stfu=stfu))
+    all_statistics('wspolrzedne_inv', lambda vertices, edges, stfu: search_best_inv(len(vertices), edges, stfu=stfu))
+    all_statistics('wspolrzedne_fancy_mutacja', lambda vertices, edges, stfu: search_fancy_mutation(len(vertices), edges, stfu=stfu))

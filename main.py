@@ -1,9 +1,10 @@
 
 from loader import load_file
 from visualizer import visualize
-#from evo import liczba_przeciec, search_best#search_fancy_mutation as search_best
+from evo import liczba_przeciec, search_best#search_fancy_mutation as search_best
 #from evo2 import liczba_przeciec, search_best
-from evo3 import search_best as search_best
+#from evo3 import search_best_unfrozen as search_best
+#from dokument1 import visualize, gen_random_solution
 import numpy as np
 import sys
 
@@ -18,7 +19,6 @@ def main():
     #'examples/dececahedron.txt'
     #'examples/z_dokumentu.txt'
     vertices, edges = load_file(graph_file)
-    #print(vertices, edges)
 
     G: nx.graph.Graph = nx.Graph().to_undirected()
     G.add_nodes_from(vertices)
@@ -29,8 +29,8 @@ def main():
     positions = nx.spring_layout(G) 
 
     n_verts = len(vertices)
-    szukane = search_best(n_verts, edges, 4, 50)
-    #search_best(n_verts, edges)#, start=np.reshape([positions[i] for i in range(n_verts)], (1, n_verts))) # , start=[positions[i] for i in range(n_verts)] - na razie chyba to nie działa
+    #szukane = search_best(n_verts, edges, 4, 75)
+    szukane = search_best(n_verts, edges)#, start=np.reshape([positions[i] for i in range(n_verts)], (1, n_verts))) # , start=[positions[i] for i in range(n_verts)] - na razie chyba to nie działa
     visualize(vertices, edges, positions=np.reshape(szukane, (-1, 2)))
 
 if __name__ == '__main__':
